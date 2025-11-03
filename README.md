@@ -1,4 +1,4 @@
-# LLMs from Scratch
+# GPT2 Implementation from Scratch in TensorFlow
 
 A complete TensorFlow implementation of a GPT-style transformer language model built from the ground up. This project demonstrates every component of modern transformer architecture, from tokenization to multi-head attention and full model training.
 
