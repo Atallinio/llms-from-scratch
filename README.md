@@ -30,15 +30,15 @@ This project implements a 124M parameter GPT model using TensorFlow/Keras, repli
 
 ### GPT-124M Configuration
 
-{
-"vocab_size": 50257, # GPT-2 tokenizer vocabulary
-"context_length": 1024, # Maximum sequence length
-"emb_dim": 768, # Embedding dimension
-"n_heads": 12, # Number of attention heads
-"n_layers": 12, # Number of transformer blocks
-"drop_rate": 0.1, # Dropout probability
-"qkv_bias": False # Query-Key-Value projection bias
-}
+{ <br>
+"vocab_size": 50257, # GPT-2 tokenizer vocabulary <br>
+"context_length": 1024, # Maximum sequence length <br>
+"emb_dim": 768, # Embedding dimension <br>
+"n_heads": 12, # Number of attention heads <br>
+"n_layers": 12, # Number of transformer blocks <br>
+"drop_rate": 0.1, # Dropout probability <br>
+"qkv_bias": False # Query-Key-Value projection bias <br>
+} <br>
 
 
 **Total Parameters**: ~124 million trainable parameters[file:42]
