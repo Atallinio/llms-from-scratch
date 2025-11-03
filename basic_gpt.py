@@ -33,7 +33,7 @@ print(f"\nlength of the entire text file: {len(x)}")
 # In[3]:
 
 
-;okens = re.split(r'([,.:;?_!"()\']|--|\s)', x)
+tokens = re.split(r'([,.:;?_!"()\']|--|\s)', x)
 print(tokens[:100])
 
 vocabulary = sorted(set(tokens))
@@ -202,7 +202,7 @@ pos_embedding = keras.layers.Embedding(context_len, output_dim)(pos_idx)
 
 # Add the positional information to the original token embedding
 input_embedding = token_embedding + pos_embedding
-
+input_embedding.shape
 
 # ## Creating a Simple Self Attention Layer
 
@@ -355,16 +355,17 @@ multi_head(input_embedding)
 # In[85]:
 
 class MultiHeadAttention(keras.Layer):
-    def __init__(self, dim, num_heads=2, context_length=1024, bias=True, dropout=0.5):
+    def __init__(self, config):
         super().__init__()
 
         # The dimention of the query, key and value weights
-        self.dim = dim
-        self.num_heads = num_heads
-        self.bias = bias
-        self.context_length = context_length
-        self.head_dim = dim // num_heads
-        self.dropout = keras.layers.Dropout(dropout)
+        self.dim = config["emb_dim"] 
+        self.num_heads = config["n_heads"]
+        self.bias = config["qkv_bias"]
+        self.context_length = config["context_length"]
+        self.head_dim = self.dim // self.num_heads
+        self.dropout = keras.layers.Dropout(config["drop_rate"])
+        self.mask = self.mask()
 
     def build(self, input_shape):
         # Initializing the query, key and value weights
@@ -375,7 +376,6 @@ class MultiHeadAttention(keras.Layer):
 
         self.proj = keras.layers.Dense(self.dim)
 
-        self.mask = self.mask()
 
     def mask(self):
         # Create & Apply a mask on the attention scores
@@ -450,13 +450,13 @@ class GPTModel(keras.Model):
         self.drop_emb = keras.layers.Dropout(config["drop_rate"]) 
         
         # Create the transformer blocks as a sequential model
-        self.transformer_blocks = keras.layers.Sequential( [TransformerBlock(config) 
+        self.transformer_blocks = keras.Sequential( [TransformerBlock(config) 
                                                            for _ in range(config["n_layers"])])
 
         # Create the final normalization layer
         self.final_norm = LayerNorm(config["emb_dim"])
 
-        self.out_head = keras.layers.Dense(config["emb_dim"], config["vocab_size"])
+        self.out_head = keras.layers.Dense(config["vocab_size"])
 
     def call(self, inp_tokens):
         batch_size, context_len = inp_tokens.shape
@@ -474,10 +474,34 @@ class GPTModel(keras.Model):
         return output
         
 class TransformerBlock(keras.Layer):
-    def __init__(self, cfg):
+    def __init__(self, config):
         super().__init__()
+        self.layer_norm_1 = LayerNorm()
+        self.attention = MultiHeadAttention(config)
+        self.dropout_1 = keras.layers.Dropout(config["drop_rate"])
+
+        self.layer_norm_2 = LayerNorm()
+        self.feed_forward = FeedForward(config)
+        self.dropout_2 = keras.layers.Dropout(config["drop_rate"])
+        
+    def build(self):
+        pass
 
     def call(self, x):     
+        # Self-attention part 
+        shortcut_1 = x
+        x = self.layer_norm_1(x)
+        x = self.attention(x)
+        x = self.dropout_1(x)
+        x = shortcut_1 + x
+        
+        # Feed-forward part
+        shortcut_2 = x
+        x = self.layer_norm_2(x)
+        x = self.feed_forward(x)
+        x = self.dropout_2(x)
+        x = shortcut_2 + x
+
         return x
 
 class LayerNorm(keras.Layer):
@@ -506,9 +530,14 @@ class GELU(keras.Layer):
 class FeedForward(keras.Layer):
     def __init__(self, config):
         super().__init__()
-        self.layers = keras.Sequential([keras.Dense(4 * config["emb_dim"]),
+        self.layers = keras.Sequential([keras.layers.Dense(4 * config["emb_dim"]),
             GELU(),
-            keras.Dense(config["emb_dim"])])
+            keras.layers.Dense(config["emb_dim"])])
 
     def call(self, x):
         return self.layers(x)
+
+model = GPTModel(GPT_CONFIG_124M)
+model(next(iter(dataset))[0])
+print(model.count_params())
+
