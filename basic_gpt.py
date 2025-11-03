@@ -177,7 +177,7 @@ print(next(iter(dataset)))
 # In[32]:
 
 
-max_length = 1024
+max_length = 1024# initially was 1024
 stride = 8 
 batch_size = 8
 
@@ -227,10 +227,6 @@ def Attention(inputs):
     return final_context_vec
 
 
-# In[14]:
-
-
-input_embedding.shape
 
 
 # In[ ]:
@@ -333,7 +329,7 @@ class CasualSelfAttention(keras.Layer):
 # In[82]:
 
 
-self_attention = CasualSelfAttention(256)
+self_attention = CasualSelfAttention(128, context_length=1024, bias=False, dropout=0.3)
 self_attention(input_embedding)
 
 # In[83]:
@@ -349,10 +345,21 @@ class MultiHeadedAttentionWrapper(keras.Layer):
 
 # In[84]:
 
-multi_head = MultiHeadedAttentionWrapper(128)
+multi_head = MultiHeadedAttentionWrapper(128, num_heads=4, context_length=1024, bias=False, dropout=0.3)
 multi_head(input_embedding)
 
-# In[85]:
+# In[87]:
+
+# Create the GPT config
+GPT_CONFIG_124M = {
+    "vocab_size": 50257,     # Vocabulary size
+    "context_length": 1024,  # Context length
+    "emb_dim": 768,          # Embedding dimension
+    "n_heads": 12,           # Number of attention heads
+    "n_layers": 12,          # Number of layers
+    "drop_rate": 0.1,        # Dropout rate
+    "qkv_bias": False        # Query-Key-Value bias
+}
 
 class MultiHeadAttention(keras.Layer):
     def __init__(self, config):
@@ -415,27 +422,6 @@ class MultiHeadAttention(keras.Layer):
         context_vector = self.proj(context_vector)
 
         return context_vector 
-
-
-# In[86]:
-
-multi_attention = MultiHeadAttention(dim=output_dim, num_heads=12, context_length=context_len, bias=False, dropout=0.3)
-multi_attention(input_embedding)
-
-
-# In[87]:
-
-# Create the GPT config
-GPT_CONFIG_124M = {
-    "vocab_size": 50257,     # Vocabulary size
-    "context_length": 1024,  # Context length
-    "emb_dim": 768,          # Embedding dimension
-    "n_heads": 12,           # Number of attention heads
-    "n_layers": 12,          # Number of layers
-    "drop_rate": 0.1,        # Dropout rate
-    "qkv_bias": False        # Query-Key-Value bias
-}
-
 # Create a GPT model
 class GPTModel(keras.Model):
     def __init__(self, config):
@@ -539,5 +525,5 @@ class FeedForward(keras.Layer):
 
 model = GPTModel(GPT_CONFIG_124M)
 model(next(iter(dataset))[0])
-print(model.count_params())
+#print(model.count_params())
 
